@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  orion:
+    image: fiware/orion
+    ports:
+      - "1026:1026"
+    command: -dbhost mongo
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:4.4
+    ports:
+      - "27017:27017"
+
+  quantumleap:
+    image: orchestracities/quantumleap
+    ports:
+      - "8668:8668"
+    environment:
+      - CRATE_HOST=cratedb
+    depends_on:
+      - cratedb
+
+  cratedb:
+    image: crate
+    ports:
+      - "4200:4200"
+    command: crate -Cauth.host_based.enabled=false
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+
+  data-generator:
+    build: ./fastapi_data_generator
+    ports:
+      - "8000:8000"
+    depends_on:
+      - orion
+
+  streamlit-app:
+    build: ./app
+    ports:
+      - "8501:8501"
+    depends_on:
+      - orion
